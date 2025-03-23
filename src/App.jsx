@@ -18,7 +18,7 @@ const app = initializeApp(firebaseConfig);
 
   return (
     <>
-      <h1 className="text-4xl text-center font-mono font-extrabold ">ChatApp</h1>
+   
     <CustomRoutes/>
     </>
   );
