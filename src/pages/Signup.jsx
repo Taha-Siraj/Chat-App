@@ -2,7 +2,7 @@ import React, { useState , useEffect , useContext} from 'react'
 import { BiSolidHide } from "react-icons/bi";
 import { BiSolidShow } from "react-icons/bi";
 import { Link, useNavigate } from 'react-router-dom';
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { GlobalContext } from './Context/Context';
 import { ClipLoader } from 'react-spinners';
 import 'react-toastify/dist/ReactToastify.css';
@@ -16,6 +16,11 @@ const Signup = () => {
     const [ name, setName ] = useState('');
     const [ loading, setLoading ] = useState(false);
     const { state, dispatch } = useContext(GlobalContext);
+
+    useEffect(() => {
+        console.log("state", state);
+    } , [state]);
+    
     const navigate = useNavigate();
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,7 +60,7 @@ const Signup = () => {
             const user = userCredential.user;
             console.log(user);
             setLoading(false);
-            dispatch( {type: 'LOGIN', payload: user})
+            dispatch( {type: 'USER_LOGIN', payload: user})
             navigate("/login")
             toast.success('Account Created Successfully!', {
                 position: "top-center",
@@ -68,8 +73,15 @@ const Signup = () => {
                 theme: "dark",
                 transition: Bounce,
                 });
+                updateProfile(auth.currentUser, {
+                    displayName: name,
+                    photoURL: "https://rb.gy/hum5zi"
+                }).then(() => {
+                    console.log('Profile Updated!');
+                }).catch((error) => {
+                    console.log('Profile Update Error!');
+                })
         })
-
         .catch((error) => {
             setLoading(false);
             const errorCode = error.code;

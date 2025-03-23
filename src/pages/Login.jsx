@@ -1,4 +1,4 @@
-import React, { useState , useContext } from 'react'
+import React, { useState , useContext, useEffect } from 'react'
 import { BiSolidHide } from "react-icons/bi";
 import { BiSolidShow } from "react-icons/bi";
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,6 +15,10 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const {state , dispatch} = useContext(GlobalContext);
+
+    useEffect(() => {
+        console.log("state hai ya nhi !!", state);
+    } , [state , loading]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -50,7 +54,7 @@ signInWithEmailAndPassword(auth, email, password)
         theme: "dark",
         transition: Bounce,
         });
-        dispatch({type: 'LOGIN', payload: user});
+        dispatch({type: 'USER_LOGIN', payload: user});
         navigate("/Chatdashbord")
   })
   .catch((error) => {
