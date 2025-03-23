@@ -1,11 +1,10 @@
 import React, { useState , useEffect , useContext} from 'react'
 import { BiSolidHide } from "react-icons/bi";
 import { BiSolidShow } from "react-icons/bi";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { GlobalContext } from './Context/Context';
 import { ClipLoader } from 'react-spinners';
-
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 
@@ -17,7 +16,7 @@ const Signup = () => {
     const [ name, setName ] = useState('');
     const [ loading, setLoading ] = useState(false);
     const { state, dispatch } = useContext(GlobalContext);
-    
+    const navigate = useNavigate();
     const handleSubmit = async (e) => {
         e.preventDefault();
         if(!email || !password || !name) {
@@ -54,35 +53,54 @@ const Signup = () => {
         createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             const user = userCredential.user;
-            dispatch( {type: 'LOGIN', payload: user})
-            setLoading(false);
             console.log(user);
+            setLoading(false);
+            dispatch( {type: 'LOGIN', payload: user})
+            navigate("/login")
+            toast.success('Account Created Successfully!', {
+                position: "top-center",
+                autoClose: 1000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "dark",
+                transition: Bounce,
+                });
         })
-        useEffect(() => {
-            console.log(state, "state");
-        } , [state])
+
         .catch((error) => {
-        setLoading(false);
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log(errorMessage);
-    
+            setLoading(false);
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            toast.error('Email Already In Use!', {
+                position: "top-center",
+                autoClose: 1000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "dark",
+                transition: Bounce,
+                });
     });
 }
     return (
     <div>
         <ToastContainer
-position="top-center"
-autoClose={1000}
-hideProgressBar={false}
-newestOnTop={false}
-closeOnClick={false}
-rtl={false}
-pauseOnFocusLoss
-draggable
-pauseOnHover
-theme="dark"
-transition={Bounce}
+        position="top-center"
+        autoClose={1000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        transition={Bounce}
 />
       <section className="bg-gray-50 dark:bg-gray-900">
   <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
