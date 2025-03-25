@@ -2,7 +2,7 @@ import React, { useState , useContext, useEffect } from 'react'
 import { BiSolidHide } from "react-icons/bi";
 import { BiSolidShow } from "react-icons/bi";
 import { Link, useNavigate } from 'react-router-dom';
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged , sendPasswordResetEmail   } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider ,signInWithPopup , sendPasswordResetEmail   } from "firebase/auth";
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
@@ -55,7 +55,7 @@ signInWithEmailAndPassword(auth, email, password)
         transition: Bounce,
         });
         dispatch({type: 'USER_LOGIN', payload: user});
-        navigate("/Chatdashbord")
+        navigate("/userlist")
   })
   .catch((error) => {
       const errorCode = error.code;
@@ -107,6 +107,48 @@ sendPasswordResetEmail(auth, email)
         transition: Bounce,
     }); 
   });
+    }
+    const signInWithGoogle = () => {
+      const auth = getAuth();
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential.accessToken;
+          const user = result.user;
+
+          toast.success('successfully signin With Google!', {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
+            transition: Bounce,
+        }); 
+        dispatch({type: 'USER_LOGIN', payload: user});
+        navigate("/userlist")
+
+        }).catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          const email = error.customData.email;
+          const credential = GoogleAuthProvider.credentialFromError(error);
+          toast.error('Not signin With Google!', {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
+            transition: Bounce,
+        }); 
+        });
+
     }
   return (
     <div>
@@ -167,6 +209,11 @@ sendPasswordResetEmail(auth, email)
                       Don’t have an account yet? <Link className="font-medium text-primary-600 hover:underline dark:text-primary-500" to="/signup" > Signup</Link>
                   </p>
               </form>
+                  <button type="submit" className="w-full bg-black text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" onClick={signInWithGoogle}>
+                    {loading ? <ClipLoader size={25} color="#fff"  /> : null }
+                       {loading ? null : "Sign in with Google"}
+                     
+                  </button>
           </div>
       </div>
   </div>
