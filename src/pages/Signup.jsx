@@ -81,7 +81,6 @@ const Signup = () => {
                 }).catch((error) => {
                     console.log('Profile Update Error!');
                 })
-                
         })
         .catch((error) => {
             setLoading(false);
