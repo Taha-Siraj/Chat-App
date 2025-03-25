@@ -72,10 +72,8 @@ signInWithEmailAndPassword(auth, email, password)
         theme: "dark",
         transition: Bounce,
         });
-    
   });
     }
-
     const forgotPassword = () => {
         const auth = getAuth();
 sendPasswordResetEmail(auth, email)

@@ -19,8 +19,6 @@ const UserProfile = () => {
                   console.log(error);
            });
            };
-           
-
   return (
     <div className=' flex justify-end'>
     <div className='flex  flex-col gap-y-3 text-white text-center items-center h-[88vh] bg-gray-800 justify-center w-[400px] '>
@@ -32,5 +30,4 @@ const UserProfile = () => {
     </div>
   )
 }
-
 export default UserProfile
