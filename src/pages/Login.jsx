@@ -127,7 +127,7 @@ sendPasswordResetEmail(auth, email)
             transition: Bounce,
         }); 
         dispatch({type: 'USER_LOGIN', payload: user});
-        navigate("/userlist")
+        navigate("/")
 
         }).catch((error) => {
           const errorCode = error.code;
