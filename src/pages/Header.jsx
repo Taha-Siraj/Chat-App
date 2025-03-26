@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { GlobalContext } from './Context/Context'
 import { Link, useNavigate } from 'react-router-dom';
+
 const Header = () => {
     const { state,  dispatch} = useContext(GlobalContext);
     const [photoURL, setPhotoURL] = useState(localStorage.getItem("photoURL") || "default-photo-url");
-
     const navigate = useNavigate();
     useEffect(() => {
       if(state.user?.photoURL){

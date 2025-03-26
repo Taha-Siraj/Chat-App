@@ -3,7 +3,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import { GlobalContext } from './Context/Context';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
-import Header from './Header';
 
 const UserProfile = () => {
     const { state, dispatch } = useContext(GlobalContext);
@@ -59,7 +58,7 @@ const UserProfile = () => {
             .then(() => {
                 localStorage.clear(); 
                 dispatch({ type: 'USER_LOGOUT' });
-                navigate("/login");
+                navigate("/");
             })
             .catch((error) => {
                 console.log(error);
@@ -68,9 +67,9 @@ const UserProfile = () => {
 
     return (
       <>
-     
+
         <div className='flex justify-end'>
-            <div className='flex flex-col gap-y-3 text-white text-center items-center h-[88vh] bg-gray-800 justify-center w-[400px]'>
+            <div className='flex flex-col gap-y-3 text-white text-center items-center h-[100vh] bg-gray-800 justify-center w-[400px]'>
                 <img src={photoURL} alt="Profile" className='rounded-full h-20 cursor-pointer' />
                 <h1 className='text-2xl'>Name: {displayName}</h1>
                 <h1 className='text-2xl'>Your Email: {email}</h1>
