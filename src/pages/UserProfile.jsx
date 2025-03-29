@@ -6,8 +6,7 @@ const UserProfile = () => {
 
     return (
       <>
-        <div className='flex justify-end'>
-        
+        <div className='flex justify-end'>     
         </div>
         </>
     );

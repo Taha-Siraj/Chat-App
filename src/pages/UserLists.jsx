@@ -1,133 +1,200 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import Header from "./Header";
 import { GlobalContext } from "./Context/Context";
-import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { getFirestore, collection, addDoc, where, query, onSnapshot, orderBy } from "firebase/firestore";
 
 const UserLists = () => {
   const { state } = useContext(GlobalContext);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messageText, setMessageText] = useState("");
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const db = getFirestore();
-  useEffect(() => {
-    if(!state.user || !selectedUser) return;
-    const q = query(
-      collection(db, "messages"),
-      where("senderId", "in", [state.user.uid, selectedUser.uid]),
-      where("receiverId", "in", [state.user.uid, selectedUser.uid])
-    );
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-  const messagesArray = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  setMessages(messagesArray);
-  })
-  return () => unsubscribe(); 
-  }, [state.user, selectedUser]);
-    const sendMessage = async () => {
-      if (!messageText.trim() || !state.user || !selectedUser) return;
-      try {
-        await addDoc(collection(db, "messages"), {
-          senderId: state.user.uid,  
-          receiverId: selectedUser.uid,
-          text: messageText, 
-          timestamp: new Date() 
-        });   
-        setMessageText("")
-      } catch (error) {
-        console.error("Message send error:", error);
-      }
-    };
+  const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    if (!state.user) return;
-    const saveUser = async () => {
-      try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("uid", "==", state.user.uid));
-        onSnapshot(q, async (querySnapshot) => {
-          if (querySnapshot.empty) {
-            await addDoc(usersRef, {
-              photoURL: state.user.photoURL,
-              userName: state.user.displayName,
-              email: state.user.email,
-              uid: state.user.uid,
-              status: "online",
-              isOnline: true,
-              isTyping: false,
-              lastSeen: new Date().toLocaleString(),
-            });
-            console.log("User Added");
-          } else {
-            console.log("User Already Exists");
-          }
-        });
-      } catch (e) {
-        console.error("Error adding user: ", e);
-      }
-    };
-    saveUser();
-  }, [state.user]);
+
   useEffect(() => {
     const usersRef = collection(db, "users");
     const unsubscribe = onSnapshot(usersRef, (snapshot) => {
       const usersArray = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setUsers(usersArray);
+      setUsers(usersArray.filter((user) => user.uid !== state.user?.uid)); 
+    }, (error) => {
+      console.error("Error fetching users:", error);
     });
-    return () => unsubscribe(); 
-  }, []);
+    return () => unsubscribe();
+  }, [state.user]);
+
+  useEffect(() => {
+    if (!state.user || !selectedUser) {
+      setMessages([]);
+      return;
+    }
+    const q = query(
+      collection(db, "messages"),
+      orderBy("timestamp", "asc") 
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const messagesArray = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter(
+          (msg) =>
+            (msg.senderId === state.user.uid && msg.receiverId === selectedUser.uid) ||
+            (msg.senderId === selectedUser.uid && msg.receiverId === state.user.uid)
+        );
+      setMessages(messagesArray);
+      scrollToBottom();
+    }, (error) => {
+      console.error("Error fetching messages:", error);
+    });
+    return () => unsubscribe();
+  }, [state.user, selectedUser]);
+
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const sendMessage = async () => {
+    if (!messageText.trim() || !state.user || !selectedUser) return;
+    const messageData = {
+      senderId: state.user.uid,
+      receiverId: selectedUser.uid,
+      text: messageText,
+      timestamp: new Date(),
+    };
+    try {
+      await addDoc(collection(db, "messages"), messageData);
+      setMessageText("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  useEffect(() => {
+    if (!state.user) return;
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("uid", "==", state.user.uid));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (snapshot.empty) {
+        try {
+          await addDoc(usersRef, {
+            uid: state.user.uid,
+            userName: state.user.displayName || "Anonymous",
+            photoURL: state.user.photoURL || "https://via.placeholder.com/40",
+            email: state.user.email,
+            status: "online",
+            lastSeen: new Date().toISOString(),
+          });
+          console.log("User added to Firestore");
+        } catch (error) {
+          console.error("Error adding user:", error);
+        }
+      }
+    }, (error) => {
+      console.error("Error checking user:", error);
+    });
+    return () => unsubscribe();
+  }, [state.user]);
 
   return (
     <>
       <Header />
-      <div className="h-screen bg-gray-800 flex">
-        <div className="bg-gray-950 h-full w-[30%]">
-          <div className="text-white flex flex-col py-3 px-4 text-2xl font-bold text-center pt-4">
+      <div className="h-screen bg-gray-900 text-white flex font-sans">
+  
+        <div className="w-[30%] bg-gray-950 h-full overflow-y-auto border-r border-gray-700">
+          <div className="py-4 px-3">
             {users.map((user) => (
               <div
-              key={user.uid}
-              onClick={() => setSelectedUser(user)}
-              className="flex items-center gap-x-4 hover:bg-gray-700 cursor-pointer p-2 rounded-md px-4 py-3  active:scale-90"
+                key={user.uid}
+                onClick={() => setSelectedUser(user)}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                  selectedUser?.uid === user.uid ? "bg-gray-700" : "hover:bg-gray-800"
+                }`}
               >
-                <img src={user.photoURL} alt="User" className="h-10 w-10 rounded-full" />
-                <span>{user.userName}</span>
+                <img src={user.photoURL} alt={user.userName} className="h-10 w-10 rounded-full" />
+                <div>
+                  <span className="text-lg">{user.userName}</span>
+                  <p className="text-xs text-gray-400">{user.status}</p>
+                </div>
               </div>
             ))}
           </div>
-
         </div>
-        <div className="bg-gray-800 text-white capitalize w-full flex flex-col  justify-between items-center py-4 gap-y-10 px-4">
-       <div className="flex gap-x-5 items-center gap-y-4 ">
-        <img src={selectedUser?.photoURL} alt="" className="h-14 w-14 rounded-full" />
-       <h1 className="text-4xl text-center font-mono font-medium">Chat with {selectedUser?.userName}</h1>
-       </div>
-        <div className="font-mono bg-gray-600 h-full w-full rounded-md px-5 py-10 flex flex-col gap-y-4 overflow-y-auto">
-    {messages.map((msg) => (
-      <div 
-        key={msg.id} 
-        className={`flex w-full ${msg.senderId === state.user.uid ? "justify-end" : "justify-start"}`}
-      >
-        <span 
-          className={`py-2 px-4 rounded-lg max-w-[70%] text-white ${
-            msg.senderId === state.user.uid ? "bg-blue-500" : "bg-gray-500"
-          }`}
-        >
-          {msg.text}
-        </span>
-      </div>
-    ))}
-      </div>
-       <div className="py-5 px-10 flex gap-x-5 w-full">
-       <input className="py-3 px-4 border bg-gray-950 rounded-lg outline-none border-gray-500 w-full text-xl font-mono"
-        type="text"
-        value={messageText} 
-        onChange={(e) => setMessageText(e.target.value)}  
-        placeholder="Type your message..."
-      />
-       <button onClick={sendMessage} className="py-2 px-4 border bg-gray-950 rounded-lg outline-none text-xl " >Sent</button>
-       </div>
+
+
+        <div className="w-[70%] flex flex-col justify-between">
+          {selectedUser ? (
+            <>
+
+              <div className="bg-gray-800 p-4 flex items-center gap-4 border-b border-gray-700">
+                <img
+                  src={selectedUser.photoURL}
+                  alt={selectedUser.userName}
+                  className="h-12 w-12 rounded-full"
+                />
+                <div>
+                  <h1 className="text-xl font-semibold">{selectedUser.userName}</h1>
+                  <p className="text-sm text-gray-400">{selectedUser.status}</p>
+                </div>
+              </div>
+
+              <div className="flex-1 p-4 overflow-y-auto bg-gray-800">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex w-full mb-3 ${
+                      msg.senderId === state.user.uid ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[60%] p-3 rounded-lg ${
+                        msg.senderId === state.user.uid
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-white"
+                      }`}
+                    >
+                      <p>{msg.text}</p>
+                      <span className="text-xs text-gray-300">
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="p-4 bg-gray-900 flex gap-3">
+                <textarea
+                  className="w-full p-3 bg-gray-950 rounded-lg outline-none text-white resize-none border border-gray-700 focus:border-blue-500"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  rows={1}
+                />
+                <button
+                  onClick={sendMessage}
+                  className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Send
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-400">
+              Select a user to start chatting
+            </div>
+          )}
         </div>
       </div>
     </>
   );
 };
+
 export default UserLists;

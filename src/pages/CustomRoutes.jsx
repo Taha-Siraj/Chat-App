@@ -8,13 +8,24 @@ const CustomRoutes = () => {
   const { state } = useContext(GlobalContext);
 
   return (
-    <div>
-      
-    <Routes>
+    <div> 
+    {(state.user === false)? (
+      <Routes>
+      <Route path='/' element={<Login/>} />
+      <Route path='/signup' element={<Signup/>} />
+      <Route path='/userlist' element={<UserList/>} />
+      </Routes>
+    ):(state.user === false)? (
+      <Routes>
     <Route path='/' element={<Login/>} />
     <Route path='/signup' element={<Signup/>} />
-    <Route path='/userlist' element={<UserList/>} />
     </Routes>
+    )
+    : <Routes>
+    <Route path='/' element={<Login/>} />
+    <Route path='/signup' element={<Signup/>} />
+    </Routes> 
+  }
     </div>
   )
 }

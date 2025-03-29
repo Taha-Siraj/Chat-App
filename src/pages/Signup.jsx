@@ -61,7 +61,7 @@ const Signup = () => {
             console.log(user);
             setLoading(false);
             dispatch( {type: 'USER_LOGIN', payload: user})
-            navigate("/")
+            navigate("/userlist")
             toast.success('Account Created Successfully!', {
                 position: "top-center",
                 autoClose: 1000,
