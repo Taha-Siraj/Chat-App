@@ -1,102 +1,70 @@
-import { useEffect, useState } from 'react';
-import Header from './Header';
-import { collection, addDoc, getFirestore, query, orderBy, onSnapshot } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import React, { useContext, useEffect, useState } from "react";
+import Header from "./Header";
+import { GlobalContext } from "./Context/Context";
+import { getFirestore, collection, addDoc, query, where, onSnapshot } from "firebase/firestore";
 
-export default function UserList() {
-  const [users, setUsers] = useState([]);
+const UserLists = () => {
+  const { state } = useContext(GlobalContext);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
+  const [users, setUsers] = useState([]);
   const db = getFirestore();
-
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user || null);
-    });
-    return () => unsubscribe();
-  }, []);
-
+    if (!state.user) return;
+    const saveUser = async () => {
+      try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("uid", "==", state.user.uid));
+        onSnapshot(q, async (querySnapshot) => {
+          if (querySnapshot.empty) {
+            await addDoc(usersRef, {
+              photoURL: state.user.photoURL,
+              userName: state.user.displayName,
+              email: state.user.email,
+              uid: state.user.uid,
+              status: "online",
+              isOnline: true,
+              isTyping: false,
+              lastSeen: new Date().toLocaleString(),
+            });
+            console.log("User Added");
+          } else {
+            console.log("User Already Exists");
+          }
+        });
+      } catch (e) {
+        console.error("Error adding user: ", e);
+      }
+    };
+    saveUser();
+  }, [state.user]);
   useEffect(() => {
     const usersRef = collection(db, "users");
     const unsubscribe = onSnapshot(usersRef, (snapshot) => {
-      setUsers(snapshot.docs.map(doc => doc.data()));
+      const usersArray = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setUsers(usersArray);
     });
-    return () => unsubscribe();
+    return () => unsubscribe(); 
   }, []);
-
-  useEffect(() => {
-    if (!selectedUser || !currentUser) return;
-    
-    const chatId = [currentUser.uid, selectedUser.uid].sort().join("_");
-    const messagesRef = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
-    
-    const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
-      setMessages(snapshot.docs.map(doc => doc.data()));
-    });
-    return () => unsubscribe();
-  }, [selectedUser, currentUser]);
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser) return;
-    
-    const chatId = [currentUser.uid, selectedUser.uid].sort().join("_");
-    await addDoc(collection(db, "chats", chatId, "messages"), {
-      sender: currentUser.uid,
-      receiver: selectedUser.uid,
-      text: newMessage,
-      timestamp: new Date().toISOString()
-    });
-    setNewMessage("");
-  };
-
   return (
     <>
       <Header />
-      <div className="flex min-h-[88vh] w-[100%] bg-gray-200 border-t-2 border-gray-500 text-black font-mono capitalize">
-        <div className="text-black text-3xl w-[25%] h-[100vh] bg-slate-800">
-          {users.map((user) => (
-            <div key={user.uid} onClick={() => setSelectedUser(user)} className='flex items-center gap-4 p-4 hover:bg-slate-600'>
-              <img src={user.photoURL} className='rounded-full w-[50px] h-[50px]' alt="" />
-              <h1>{user.name}</h1>
-            </div>
-          ))}
-        </div>
-
-        <div className='w-[75%] bg-gray-600 h-[100vh] flex flex-col justify-between items-center py-3 px-4'>
-          {selectedUser ? (
-            <>
-              <div className='flex justify-center items-center gap-x-3 capitalize'>
-                <img src={selectedUser.photoURL} className='rounded-full w-[50px] h-[50px]' alt="" />
-                <h1 className='text-4xl text-white font-semibold font-mono'>Chat With {selectedUser.name}</h1>
+      <div className="h-screen bg-gray-800">
+        <div className="bg-gray-700 h-full w-[350px]">
+          <div className="text-white flex flex-col py-3 px-5 text-2xl font-bold text-center pt-4">
+            {users.map((user) => (
+              <div
+                key={user.uid}
+                onClick={() => setSelectedUser(null)}
+                className="flex items-center gap-x-4 hover:bg-gray-950 cursor-pointer p-2 rounded-md px-4 py-3"
+              >
+                <img src={user.photoURL} alt="User" className="h-10 w-10 rounded-full" />
+                <span>{user.userName}</span>
               </div>
-
-              <div className='w-[75%] h-[70%] overflow-y-auto bg-gray-700 p-4 rounded-lg'>
-                {messages.map((msg, index) => (
-                  <div key={index} className={`p-3 my-2 w-fit max-w-[80%] rounded-lg ${msg.sender === currentUser.uid ? 'bg-blue-500 ml-auto' : 'bg-gray-400'}`}>
-                    <p className='text-white'>{msg.text}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className='w-[75%] flex gap-x-3'>
-                <input 
-                  type="text" 
-                  placeholder='Type your message' 
-                  className='capitalize border border-gray-500 w-full bg-slate-950 px-4 text-white py-4 rounded-lg outline-none' 
-                  value={newMessage} 
-                  onChange={(e) => setNewMessage(e.target.value)}
-                />
-                <button onClick={sendMessage} className='bg-slate-950 px-4 py-2 text-xl text-white rounded-lg'>Send</button>
-              </div>
-            </>
-          ) : (
-            <h1 className='text-3xl text-white'>Select a user to start chatting</h1>
-          )}
+            ))}
+          </div>
         </div>
       </div>
     </>
   );
-}
+};
+export default UserLists;
