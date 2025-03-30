@@ -115,12 +115,9 @@ const Signup = () => {
         transition={Bounce}
 />
       <section className="bg-gray-50 dark:bg-gray-900">
-  <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-      <a href="#" className="flex items-center mb-6 text-2xl font-extrabold text-gray-900 dark:text-white capitalize font-mono  ">
-         
-      welcome To Chat App
-      </a>
-      <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+  <div className="flex bg-gray-950 text-white h-screen flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">      
+  <h1 className='text-2xl capitalize py-4 font-semibold font-mono'>welcome To Chat App</h1>
+      <div className="w-full bg-[#fff] rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800  dark:border-gray-700 font-mono">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
               <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white font-mono">
                   Sign in to your account
@@ -146,7 +143,7 @@ const Signup = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         value={password}
                        name="password" id="password" placeholder="••••••••" className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required=""/>
-                      <span className='cursor-pointer text-xl absolute top-10 left-[350px] ' onClick={() => setPasswordShown(prev => !prev)}> {passwordShown ?  <BiSolidShow/> : <BiSolidHide/>} </span>
+                      <span className='cursor-pointer text-black text-xl absolute top-10 left-[350px] ' onClick={() => setPasswordShown(prev => !prev)}> {passwordShown ?  <BiSolidShow/> : <BiSolidHide/>} </span>
                   </div>
                   
                   <button 
@@ -158,8 +155,8 @@ const Signup = () => {
                     ) : null}
                     {loading ? null : "Sign in"}
                 </button>
-                  <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                      Already have an account! <Link className="font-medium text-primary-600 hover:underline dark:text-primary-500" to='/login' >Login </Link>
+                  <p className="text-sm font-light text-gray-700 dark:text-gray-400">
+                      Already have an account! <Link className="font-medium text-primary-700 hover:underline dark:text-primary-500" to='/' >Login </Link>
                   </p>
               </form>
           </div>

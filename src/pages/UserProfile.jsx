@@ -1,9 +1,5 @@
-
 import React from 'react';
-
 const UserProfile = () => {
-
-
     return (
       <>
         <div className='flex justify-end'>     
