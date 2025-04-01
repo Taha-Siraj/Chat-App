@@ -2,7 +2,8 @@ import React, { useContext, useEffect, useState, useRef } from "react";
 import Header from "./Header";
 import { GlobalContext } from "./Context/Context";
 import { getFirestore, collection, addDoc, where, query, onSnapshot, orderBy } from "firebase/firestore";
-
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 const UserLists = () => {
   const { state } = useContext(GlobalContext);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -11,7 +12,6 @@ const UserLists = () => {
   const [messages, setMessages] = useState([]);
   const db = getFirestore();
   const messagesEndRef = useRef(null);
-
 
   useEffect(() => {
     const usersRef = collection(db, "users");
@@ -49,11 +49,9 @@ const UserLists = () => {
     return () => unsubscribe();
   }, [state.user, selectedUser]);
 
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
   const sendMessage = async () => {
     if (!messageText.trim() || !state.user || !selectedUser) return;
     const messageData = {
@@ -62,6 +60,7 @@ const UserLists = () => {
       text: messageText,
       timestamp: new Date(),
     };
+
     try {
       await addDoc(collection(db, "messages"), messageData);
       setMessageText("");
@@ -69,6 +68,7 @@ const UserLists = () => {
       console.error("Error sending message:", error);
     }
   };
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -91,6 +91,7 @@ const UserLists = () => {
             status: "online",
             lastSeen: new Date().toISOString(),
           });
+
           console.log("User added to Firestore");
         } catch (error) {
           console.error("Error adding user:", error);
@@ -102,6 +103,15 @@ const UserLists = () => {
     return () => unsubscribe();
   }, [state.user]);
 
+
+  useGSAP(() => {
+    gsap.from("#msgtext", {
+      rotate: 300,
+      delay: 1,
+      opacity: 0,
+      
+    })
+  })
   return (
     <>
       <Header />
@@ -131,34 +141,30 @@ const UserLists = () => {
         <div className="w-[70%] flex flex-col justify-between">
           {selectedUser ? (
             <>
-
               <div className="bg-gray-800 p-4 flex items-center gap-4 border-b border-gray-700">
                 <img
                   src={selectedUser.photoURL}
                   alt={selectedUser.userName}
-                  className="h-12 w-12 rounded-full"
-                />
+                  className="h-12 w-12 rounded-full"/>
                 <div>
                   <h1 className="text-xl font-semibold">{selectedUser.userName}</h1>
                   <p className="text-sm text-gray-400">{selectedUser.status}</p>
                 </div>
               </div>
-
               <div className="flex-1 p-4 overflow-y-auto bg-gray-800">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`flex w-full mb-3 ${
                       msg.senderId === state.user.uid ? "justify-end" : "justify-start"
-                    }`}
-                  >
+                    }`}>
                     <div
+                     id="msgtext"
                       className={`max-w-[60%] p-3 rounded-lg ${
                         msg.senderId === state.user.uid
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-white"
-                      }`}
-                    >
+                      }`}>
                       <p>{msg.text}</p>
                       <span className="text-xs text-gray-300">
                         {new Date(msg.timestamp).toLocaleTimeString()}
@@ -168,7 +174,6 @@ const UserLists = () => {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
-
               <div className="p-4 bg-gray-900 flex gap-3">
                 <textarea
                   className="w-full p-3 bg-gray-950 rounded-lg outline-none text-white resize-none border border-gray-700 focus:border-blue-500"
@@ -179,19 +184,18 @@ const UserLists = () => {
                   rows={1}
                 />
                 <button
-                  onClick={sendMessage}
-                  className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Send
-                </button>
+                onClick={sendMessage}
+                className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                Send
+              </button>
               </div>
-            </>
-          ) : (
+              </>
+            ):(
             <div className="flex-1 flex items-center justify-center text-gray-400">
-              Select a user to start chatting
+            Select a user to start chatting
             </div>
-          )}
-        </div>
+            )}
+            </div>
       </div>
     </>
   );

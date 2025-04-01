@@ -7,12 +7,13 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
 import { GlobalContext } from './Context/Context';
+
 const Login = () => {
     const [ passwordShown, setPasswordShown ] = useState(false);
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [Googleloading, setGoogleLoading] = useState(false);
     const navigate = useNavigate();
     const {state , dispatch} = useContext(GlobalContext);
 
@@ -55,7 +56,7 @@ signInWithEmailAndPassword(auth, email, password)
         transition: Bounce,
         });
         dispatch({type: 'USER_LOGIN', payload: user});
-        navigate("/userlist")
+        navigate("/userList")
   })
   .catch((error) => {
       const errorCode = error.code;
@@ -106,16 +107,18 @@ sendPasswordResetEmail(auth, email)
     }); 
   });
     }
+    
     const signInWithGoogle = () => {
+      setGoogleLoading(true)
       const auth = getAuth();
       const provider = new GoogleAuthProvider();
       signInWithPopup(auth, provider)
-        .then((result) => {
-          const credential = GoogleAuthProvider.credentialFromResult(result);
-          const token = credential.accessToken;
-          const user = result.user;
-
-          toast.success('successfully signin With Google!', {
+      .then((result) => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential.accessToken;
+        const user = result.user;
+        
+        toast.success('successfully signin With Google!', {
             position: "top-center",
             autoClose: 1000,
             hideProgressBar: false,
@@ -125,7 +128,8 @@ sendPasswordResetEmail(auth, email)
             progress: undefined,
             theme: "dark",
             transition: Bounce,
-        }); 
+          }); 
+          setGoogleLoading(false)
         dispatch({type: 'USER_LOGIN', payload: user});
         navigate("/userlist")
 
@@ -205,8 +209,8 @@ sendPasswordResetEmail(auth, email)
                   </p>
               </form>
                   <button type="submit" className="w-full bg-black text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" onClick={signInWithGoogle}>
-                    {loading ? <ClipLoader size={25} color="#fff"  /> : null }
-                       {loading ? null : "Sign in with Google"}
+                    {Googleloading ? <ClipLoader size={25} color="#fff"  /> : null }
+                       {Googleloading ? null : "Sign in with Google"}
                      
                   </button>
           </div>

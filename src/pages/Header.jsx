@@ -73,12 +73,11 @@ const Header = () => {
                       navigate("/");
                   })
                   .catch((error) => {
-                      console.log(error);
+                      console.log("logout error", error );
                   });
           };
-      
     return (
-    <div>
+    <div className='bg-[#030712]'>
      <nav className='h-[70px]  bg-gray-900 text-white flex items-center justify-between px-10 font-serif font-bold'>
         <h1 className='text-4xl text-blue-600'>Chat App </h1>
         <div className='flex items-center space-x-4'>
