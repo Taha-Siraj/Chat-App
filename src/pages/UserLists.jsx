@@ -103,15 +103,6 @@ const UserLists = () => {
     return () => unsubscribe();
   }, [state.user]);
 
-
-  useGSAP(() => {
-    gsap.from("#msgtext", {
-      rotate: 300,
-      delay: 1,
-      opacity: 0,
-      
-    })
-  })
   return (
     <>
       <Header />
