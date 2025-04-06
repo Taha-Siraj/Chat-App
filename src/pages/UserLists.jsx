@@ -3,17 +3,18 @@ import Header from "./Header";
 import { GlobalContext } from "./Context/Context";
 import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, where } from "firebase/firestore";
 import { ClipLoader } from 'react-spinners';
+
 const UserLists = () => {
+
   const { state } = useContext(GlobalContext);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messageText, setMessageText] = useState("");
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true); // Loading state to handle async user data
+  const [loading, setLoading] = useState(true);
   const db = getFirestore();
   const messagesEndRef = useRef(null);
 
-  // Fetch users
   useEffect(() => {
     if (!state.user || !state.user.uid) {
       setLoading(false);
@@ -23,7 +24,7 @@ const UserLists = () => {
     const unsubscribe = onSnapshot(usersRef, (snapshot) => {
       const usersArray = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setUsers(usersArray.filter((user) => user.uid !== state.user.uid));
-      setLoading(false); // Done loading users
+      setLoading(false); 
     }, (error) => {
       console.error("Error fetching users:", error);
       setLoading(false);
@@ -31,7 +32,6 @@ const UserLists = () => {
     return () => unsubscribe();
   }, [state.user]);
 
-  // Fetch messages
   useEffect(() => {
     if (!state.user || !state.user.uid || !selectedUser || !selectedUser.uid) {
       setMessages([]);
@@ -59,7 +59,6 @@ const UserLists = () => {
     return () => unsubscribe();
   }, [state.user, selectedUser]);
 
-  // Add current user to Firestore if not exists
   useEffect(() => {
     if (!state.user || !state.user.uid) return;
 
