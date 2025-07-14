@@ -1,12 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { GlobalContext } from './Context/Context';
-// FIX: Add getDoc to the import list below
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-// FIX: Add updatePassword to the import list below
 import { getAuth, updateProfile, updateEmail, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast, Toaster } from 'sonner';
-import { FaUserEdit, FaSave, FaTimesCircle, FaUpload, FaSpinner, FaLock, FaCheckCircle } from 'react-icons/fa';
+import { FaSave, FaTimesCircle, FaUpload, FaSpinner, FaLock, FaCheckCircle, FaPhoneAlt } from 'react-icons/fa';
 import Header from './Header';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -27,7 +25,6 @@ const EditProfile = () => {
         newPassword: '',
         confirmNewPassword: '',
         photoURL: state.user?.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${state.user?.uid || 'default'}`,
-
         bio: '',
         phone: ''
     });
@@ -36,6 +33,7 @@ const EditProfile = () => {
     useEffect(() => {
         const fetchInitialProfileData = async () => {
             if (!state.user || !state.user.uid) {
+                setLoading(false);
                 toast.error("You must be logged in to edit your profile.");
                 navigate('/login');
                 return;
@@ -43,52 +41,71 @@ const EditProfile = () => {
 
             setLoading(true);
             try {
-                const userDocRef = doc(db, "users", state.user.uid);
-                const userSnap = await getDoc(userDocRef); // <-- `getDoc` now imported
+                const authUser = auth.currentUser;
+                if (!authUser) {
+                     setLoading(false);
+                     toast.error("Authentication session missing. Please log in again.");
+                     navigate('/login');
+                     return;
+                }
 
-                let fetchedData = {
-                    userName: state.user.displayName || '',
-                    email: state.user.email || '',
-                    photoURL: state.user.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${state.user.uid}`,
+                let currentProfile = {
+                    userName: authUser.displayName || "Anonymous User",
+                    email: authUser.email || "No email provided",
+                    photoURL: authUser.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${authUser.uid}`,
+                    uid: authUser.uid,
                     newPassword: '',
                     confirmNewPassword: '',
-                    bio: '',
-                    phone: ''
                 };
+
+                const userDocRef = doc(db, "users", authUser.uid);
+                const userSnap = await getDoc(userDocRef);
 
                 if (userSnap.exists()) {
                     const firestoreData = userSnap.data();
-                    fetchedData = {
-                        ...fetchedData,
-                        userName: firestoreData.userName || fetchedData.userName,
-                        email: firestoreData.email || fetchedData.email,
-                        photoURL: firestoreData.photoURL || fetchedData.photoURL,
+                    currentProfile = {
+                        ...currentProfile,
+                        userName: firestoreData.userName || currentProfile.userName,
+                        email: firestoreData.email || currentProfile.email,
+                        photoURL: firestoreData.photoURL || currentProfile.photoURL,
                         bio: firestoreData.bio || '',
                         phone: firestoreData.phone || ''
                     };
                 }
-                setFormData(fetchedData);
+                setFormData(currentProfile);
             } catch (error) {
                 console.error("Error fetching initial profile data:", error);
-                toast.error("Failed to load profile data.");
+                toast.error("Failed to load profile data. Please try refreshing.", { duration: 4000 });
+                setFormData(prev => ({
+                    ...prev,
+                    userName: state.user?.displayName || "Error Name",
+                    email: state.user?.email || "Error Email",
+                    photoURL: state.user?.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${state.user?.uid || 'error'}`,
+                    uid: state.user?.uid || 'Error UID',
+                }));
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchInitialProfileData();
-    }, [state.user, db, navigate]);
+        if (state.user?.uid) {
+            fetchInitialProfileData();
+        } else if (state.user === null) {
+            setLoading(false);
+            toast.error("You must be logged in to edit your profile.");
+            navigate('/login');
+        }
+
+    }, [state.user, db, navigate, auth]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-
     const handleImageChange = (e) => {
         if (e.target.files[0]) {
             setSelectedImage(e.target.files[0]);
-
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFormData(prev => ({ ...prev, photoURL: reader.result }));
@@ -104,6 +121,11 @@ const EditProfile = () => {
         }
         setIsReauthenticating(true);
         try {
+            if (!auth.currentUser || !auth.currentUser.email) {
+                toast.error("Authentication session missing. Please log in again.");
+                navigate('/login');
+                return false;
+            }
             const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
             await reauthenticateWithCredential(auth.currentUser, credential);
             toast.success("Authentication confirmed.", { duration: 1500 });
@@ -115,6 +137,12 @@ const EditProfile = () => {
                 errorMessage = "Incorrect current password.";
             } else if (error.code === 'auth/invalid-email') {
                 errorMessage = "Invalid email for re-authentication.";
+            } else if (error.code === 'auth/user-mismatch') {
+                errorMessage = "User mismatch. Please log in with the correct account.";
+            } else if (error.code === 'auth/too-many-requests') {
+                 errorMessage = "Too many failed attempts. Try again later.";
+            } else if (error.code === 'auth/requires-recent-login') {
+                errorMessage = "Your session expired. Please log out and log in again.";
             }
             toast.error(errorMessage, { duration: 3000 });
             return false;
@@ -129,11 +157,11 @@ const EditProfile = () => {
 
         const user = auth.currentUser;
         if (!user) {
-            toast.error("No user is logged in.");
+            toast.error("No user is logged in. Please log in again.");
             setIsSaving(false);
+            navigate('/login');
             return;
         }
-
 
         if (formData.newPassword && formData.newPassword !== formData.confirmNewPassword) {
             toast.error("New password and confirm password do not match.");
@@ -146,27 +174,33 @@ const EditProfile = () => {
             return;
         }
 
-        const requiresReauth = formData.email !== user.email || formData.newPassword;
-        if (requiresReauth && !(await reauthenticateUser())) {
-            setIsSaving(false);
-            return;
+        const isEmailPasswordProvider = user.providerData.some(provider => provider.providerId === 'password');
+        const requiresReauth = (formData.email !== user.email || formData.newPassword) && isEmailPasswordProvider;
+
+        if (requiresReauth) {
+            const reauthSuccess = await reauthenticateUser();
+            if (!reauthSuccess) {
+                setIsSaving(false);
+                return;
+            }
+        }
+        if ((formData.email !== user.email || formData.newPassword) && !isEmailPasswordProvider) {
+            toast.info("For social logins (like Google), email/password changes must be done through your social provider's settings. Other profile details will be updated.", { duration: 6000 });
         }
 
         let newPhotoURL = formData.photoURL;
 
         try {
-
             if (selectedImage) {
                 const imageRef = ref(storage, `profile_pictures/${user.uid}/${selectedImage.name}`);
                 await uploadBytes(imageRef, selectedImage);
                 newPhotoURL = await getDownloadURL(imageRef);
-                toast.success("Profile image uploaded!");
+                toast.success("Profile image uploaded!", { duration: 1500 });
             }
 
-
             const authUpdates = {};
-            if (formData.userName !== user.displayName) {
-                authUpdates.displayName = formData.userName;
+            if (formData.userName.trim() !== user.displayName) {
+                authUpdates.displayName = formData.userName.trim();
             }
             if (newPhotoURL !== user.photoURL) {
                 authUpdates.photoURL = newPhotoURL;
@@ -175,54 +209,67 @@ const EditProfile = () => {
                 await updateProfile(user, authUpdates);
             }
 
-            if (formData.email !== user.email && formData.email.trim() !== '') {
-                await updateEmail(user, formData.email);
+            if (formData.email.trim() !== user.email && isEmailPasswordProvider) {
+                await updateEmail(user, formData.email.trim());
+                toast.success("Email updated in Firebase Authentication!", { duration: 1500 });
+            } else if (formData.email.trim() !== user.email && !isEmailPasswordProvider) {
+                console.warn("Skipping Firebase Auth email update for OAuth user.");
             }
 
-            if (formData.newPassword) {
-                // FIX: Call updatePassword here
+            if (formData.newPassword && isEmailPasswordProvider) {
                 await updatePassword(user, formData.newPassword);
-                toast.success("Password updated successfully!");
+                toast.success("Password updated successfully!", { duration: 1500 });
+            } else if (formData.newPassword && !isEmailPasswordProvider) {
+                console.warn("Skipping Firebase Auth password update for OAuth user.");
             }
-
 
             const userDocRef = doc(db, "users", user.uid);
             await updateDoc(userDocRef, {
-                userName: formData.userName,
-                email: formData.email,
+                userName: formData.userName.trim(),
+                email: formData.email.trim(),
                 photoURL: newPhotoURL,
-                bio: formData.bio,
-                phone: formData.phone,
+                bio: formData.bio.trim(),
+                phone: formData.phone.trim(),
                 lastUpdated: serverTimestamp()
             });
 
+            await user.reload();
+            const updatedAuthUser = auth.currentUser;
 
             dispatch({
                 type: 'USER_LOGIN',
                 payload: {
-                    ...user,
-                    displayName: formData.userName,
-                    email: formData.email,
-                    photoURL: newPhotoURL,
-
+                    ...updatedAuthUser,
+                    bio: formData.bio.trim(),
+                    phone: formData.phone.trim(),
                 }
             });
 
-            toast.success("Profile updated successfully!");
+            toast.success("Profile updated successfully!", { duration: 2000 });
             navigate('/userprofile');
         } catch (error) {
-            console.error("Error updating profile:", error);
+            console.log("Error updating profile:", error);
             let errorMessage = "Failed to update profile. Please try again.";
             if (error.code === 'auth/requires-recent-login') {
-                errorMessage = "Please log out and log in again to update your email/password.";
+                errorMessage = "Your session expired. Please log out and log in again to update sensitive information.";
             } else if (error.code === 'auth/email-already-in-use') {
                 errorMessage = "This email is already in use by another account.";
-            } else if (error.code === 'auth/weak-password') { // Added specific error for weak password on update
+            } else if (error.code === 'auth/weak-password') {
                 errorMessage = "New password is too weak. Please choose a stronger one.";
+            } else if (error.code === 'storage/unauthorized') {
+                errorMessage = "Permission denied to upload image. Check Firebase Storage rules.";
+            } else if (error.code === 'auth/invalid-credential') {
+                errorMessage = "Re-authentication failed. Please verify your current password.";
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = "Invalid email format provided.";
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = "Network error. Please check your internet connection.";
             }
-            toast.error(errorMessage);
+            toast.error(errorMessage, { duration: 5000 });
         } finally {
             setIsSaving(false);
+            setCurrentPassword('');
+            setFormData(prev => ({...prev, newPassword: '', confirmNewPassword: ''}));
         }
     };
 
@@ -240,7 +287,6 @@ const EditProfile = () => {
             <Header />
             <Toaster position="top-center" richColors closeButton />
 
-
             <div className="absolute inset-0 z-0 opacity-10">
                 <div className="w-full h-full bg-cover bg-center animate-pulse-bg" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1546435017-f584b423d21c?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }}></div>
             </div>
@@ -252,10 +298,9 @@ const EditProfile = () => {
                 </h1>
 
                 <form onSubmit={handleUpdateProfile} className="w-full max-w-lg bg-gray-800 rounded-2xl shadow-xl p-8 sm:p-10 transform transition-all duration-300 animate-fade-in-up-card">
-                    {/* Profile Image Upload */}
                     <div className="flex flex-col items-center mb-8">
                         <img
-                            src={formData.photoURL}
+                            src={selectedImage ? formData.photoURL : (formData.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${state.user?.uid || 'default'}`)}
                             alt="Profile Preview"
                             className="w-32 h-32 rounded-full object-cover border-4 border-indigo-500 shadow-lg mb-4"
                         />
@@ -271,7 +316,6 @@ const EditProfile = () => {
                         </label>
                     </div>
 
-                    {/* Basic Info Fields */}
                     <div className="space-y-6 mb-8">
                         <div>
                             <label htmlFor="userName" className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
@@ -323,7 +367,6 @@ const EditProfile = () => {
                         </div>
                     </div>
 
-                    {/* Password Change Section */}
                     <div className="space-y-6 mb-8 p-6 bg-gray-900 rounded-lg shadow-inner">
                         <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><FaLock className="text-lg text-yellow-400" /> Change Password</h3>
                         <div>
@@ -364,7 +407,6 @@ const EditProfile = () => {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-4 mt-8">
                         <button
                             type="submit"
