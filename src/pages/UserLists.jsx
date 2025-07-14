@@ -18,6 +18,7 @@ import { ClipLoader } from 'react-spinners';
 import { FaPaperPlane, FaUserCircle, FaBars } from 'react-icons/fa'; // Icons for send, default avatar, menu toggle
 import { BsDot } from 'react-icons/bs'; // For online/offline status dots
 import { formatDistanceToNowStrict, isToday, isYesterday, format } from 'date-fns'; // For better time formatting
+import { Link } from "react-router-dom";
 
 const UserLists = () => {
   const { state } = useContext(GlobalContext);
@@ -254,10 +255,10 @@ const UserLists = () => {
         <FaUserCircle className="text-6xl text-gray-500 mb-4 animate-bounce-slow" />
         <h1 className="text-3xl font-bold mb-3">Authentication Required</h1>
         <p className="text-lg text-gray-400 mb-6">Please log in to access the chat application.</p>
-        {/* You might want a dedicated login button here, potentially passed as a prop if this is a sub-component */}
-        {/* <Link to="/login" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+        
+        <Link to="/login" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
           Go to Login
-        </Link> */}
+        </Link>
       </div>
     );
   }

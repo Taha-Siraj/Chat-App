@@ -38,17 +38,9 @@ const Header = () => {
                 localStorage.setItem("displayName", state.user.displayName || "Anonymous User");
                 localStorage.setItem("email", state.user.email || "No email provided");
 
-                // Optionally, fetch from Firestore if more detailed user profile is stored there
-                // const userRef = doc(db, "users", state.user.uid);
-                // const userSnap = await getDoc(userRef);
-                // if (userSnap.exists()) {
-                //     const userData = userSnap.data();
-                //     setUserDisplayName(userData.userName || state.user.displayName || "Anonymous User");
-                //     setUserPhotoURL(userData.photoURL || state.user.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${state.user.uid}`);
-                //     setUserEmail(userData.email || state.user.email || "No email provided");
-                // }
+                
             } else {
-                // If user is logged out or not in state, clear local storage and set defaults
+               
                 localStorage.removeItem("photoURL");
                 localStorage.removeItem("displayName");
                 localStorage.removeItem("email");
@@ -59,9 +51,7 @@ const Header = () => {
         };
 
         fetchAndSetUserData();
-    }, [state.user, db]); // Re-run when state.user changes
-
-    // Close dropdown when clicking outside
+    }, [state.user, db]); 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -74,16 +64,16 @@ const Header = () => {
         };
     }, [dropdownRef]);
 
-    // Handle logout
+ 
     const handleLogout = async () => {
         const auth = getAuth();
         try {
             await signOut(auth);
-            localStorage.clear(); // Clear all local storage related to user
+            localStorage.clear(); 
             dispatch({ type: 'USER_LOGOUT' });
             toast.success("You have been logged out successfully!", { duration: 2000 });
-            navigate("/"); // Navigate to home or login page
-            setIsDropdownOpen(false); // Close dropdown after logout
+            navigate("/"); 
+            setIsDropdownOpen(false); 
         } catch (error) {
             console.error("Logout error:", error);
             toast.error("Failed to log out. Please try again.", { duration: 3000 });
@@ -146,7 +136,7 @@ const Header = () => {
                                     <Link
                                         to="/userprofile"
                                         onClick={() => { setIsDropdownOpen(false); navigate('/userprofile'); }}
-                                        className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 flex items-center gap-3"
+                                        className="px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 flex items-center gap-3"
                                     >
                                         <FaUserCircle className="text-lg" /> View Profile
                                     </Link>

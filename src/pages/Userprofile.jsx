@@ -3,6 +3,7 @@ import { GlobalContext } from './Context/Context'; // Assuming GlobalContext is 
 import { getFirestore, doc, getDoc } from 'firebase/firestore'; // For fetching user data from Firestore
 import { FaUserCircle, FaEnvelope, FaIdCard, FaSpinner, FaEdit } from 'react-icons/fa'; // Icons for user info and loading
 import Header from './Header'; // Assuming your Header component is used globally
+import { Link } from 'react-router-dom';
 
 const Userprofile = () => {
     const { state } = useContext(GlobalContext);
@@ -146,13 +147,13 @@ const Userprofile = () => {
                                 */}
                             </div>
 
-                            {/* Edit Profile Button (Optional) */}
+                       
                             <button
-                                // onClick={() => navigate('/edit-profile')} // Link to an edit profile page
+                               
                                 className="mt-10 w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-xl flex items-center justify-center gap-3"
                                 disabled={!state.user} // Disable if not logged in
                             >
-                                <FaEdit /> Edit Profile
+                                <FaEdit /> <Link to={'/EditProfile'} > Edit Profile </Link>
                             </button>
                         </>
                     )}

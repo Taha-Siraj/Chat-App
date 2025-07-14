@@ -1,12 +1,12 @@
+
 import React, { createContext, useReducer } from 'react';
 import { reducer } from './Reducer';
 
 export const GlobalContext = createContext(null);
 
 const initialState = {
-    user: {},
+    user: null,
     isLogin: false,
-  
 };
 
 export default function ContextProvider({ children }) {
