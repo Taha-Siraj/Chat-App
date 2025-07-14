@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef, useCallback } from "react";
-import Header from "./Header"; // Assuming your Header is still relevant
+import Header from "./Header";
 import { GlobalContext } from "./Context/Context";
 import {
   getFirestore,
@@ -12,13 +12,14 @@ import {
   where,
   updateDoc,
   doc,
-  setDoc, // Import setDoc
+  setDoc,
+  getDoc, // Make sure getDoc is imported here! (It is in your provided code, good!)
 } from "firebase/firestore";
 import { ClipLoader } from 'react-spinners';
-import { FaPaperPlane, FaUserCircle, FaBars } from 'react-icons/fa'; // Icons for send, default avatar, menu toggle
-import { BsDot } from 'react-icons/bs'; // For online/offline status dots
-import { formatDistanceToNowStrict, isToday, isYesterday, format } from 'date-fns'; // For better time formatting
-import { Link } from "react-router-dom";
+import { FaPaperPlane, FaUserCircle, FaBars } from 'react-icons/fa';
+import { BsDot } from 'react-icons/bs';
+import { formatDistanceToNowStrict, isToday, isYesterday, format } from 'date-fns';
+import { Link } from "react-router-dom"; // Link is used for the "Go to Login" button
 
 const UserLists = () => {
   const { state } = useContext(GlobalContext);
@@ -27,10 +28,10 @@ const UserLists = () => {
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const db = getFirestore();
-  const messagesEndRef = useRef(null); // Ref for auto-scrolling to bottom of messages
-  const messageInputRef = useRef(null); // Ref for focusing message input
+  const messagesEndRef = useRef(null);
+  const messageInputRef = useRef(null);
 
   // --- Utility Functions ---
   const scrollToBottom = () => {
@@ -38,14 +39,14 @@ const UserLists = () => {
   };
 
   const getMessageTimestamp = (timestamp) => {
-    if (!timestamp || !timestamp.toDate) return "Sending..."; // Ensure timestamp.toDate() exists
+    if (!timestamp || !timestamp.toDate) return "Sending...";
     const date = timestamp.toDate();
     if (isToday(date)) {
-      return format(date, 'h:mm a'); // e.g., 9:45 PM
+      return format(date, 'h:mm a');
     } else if (isYesterday(date)) {
       return `Yesterday, ${format(date, 'h:mm a')}`;
     } else {
-      return format(date, 'MMM d, yyyy h:mm a'); // e.g., Jan 1, 2024 9:45 PM
+      return format(date, 'MMM d, yyyy h:mm a');
     }
   };
 
@@ -56,7 +57,7 @@ const UserLists = () => {
           <BsDot className="text-xl" /> Online
         </span>
       );
-    } else if (user.lastSeen && typeof user.lastSeen.toDate === 'function') { // Check for .toDate() function
+    } else if (user.lastSeen && typeof user.lastSeen.toDate === 'function') {
       const lastSeenDate = user.lastSeen.toDate();
       const relativeTime = formatDistanceToNowStrict(lastSeenDate, { addSuffix: true });
       return (
@@ -75,11 +76,12 @@ const UserLists = () => {
   // --- Firebase Listeners & Effects ---
 
   // Effect to manage user online/offline status in Firestore
+  // FIX: Wrapped the setOnline/setOffline functions in useCallback if they are used as dependencies
+  // However, in this case, they are not used as dependencies of other effects, so direct definition is fine.
   useEffect(() => {
     if (!state.user || !state.user.uid) return;
 
     const userDocRef = doc(db, "users", state.user.uid);
-    // Use setDoc with merge:true to create or update the document
     const setOnline = async () => {
       try {
         await setDoc(userDocRef, {
@@ -89,7 +91,7 @@ const UserLists = () => {
           email: state.user.email || "",
           status: "online",
           lastSeen: serverTimestamp(),
-        }, { merge: true }); // Use merge: true to avoid overwriting existing data
+        }, { merge: true });
         console.log(`User ${state.user.uid} set to online.`);
       } catch (e) {
         console.error("Error setting online status or creating user document:", e);
@@ -99,9 +101,7 @@ const UserLists = () => {
     const setOffline = async () => {
       if (!state.user || !state.user.uid) return;
       try {
-        // Only update status and lastSeen if the document exists
-        // Attempting to update a non-existent document will still throw an error if not caught
-        const userSnap = await getDoc(userDocRef);
+        const userSnap = await getDoc(userDocRef); // getDoc is correctly imported now
         if (userSnap.exists()) {
           await updateDoc(userDocRef, {
             status: "offline",
@@ -116,14 +116,14 @@ const UserLists = () => {
       }
     };
 
-    setOnline(); // Set online when component mounts
+    setOnline();
 
     window.addEventListener('beforeunload', setOffline);
     return () => {
       window.removeEventListener('beforeunload', setOffline);
-      setOffline(); // Ensure offline status is set on unmount
+      setOffline();
     };
-  }, [state.user, db]); // useCallback is not needed here as db and state.user are stable enough
+  }, [state.user, db]);
 
   // Fetch all users for the sidebar
   useEffect(() => {
@@ -134,11 +134,9 @@ const UserLists = () => {
     const usersRef = collection(db, "users");
     const unsubscribe = onSnapshot(usersRef, (snapshot) => {
       const usersArray = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      // Filter out current user, sort by online status then last seen/alphabetically
       const filteredAndSortedUsers = usersArray
         .filter((user) => user.uid !== state.user.uid)
         .sort((a, b) => {
-          // Check if lastSeen is a Timestamp before calling toDate()
           const aLastSeen = a.lastSeen && typeof a.lastSeen.toDate === 'function' ? a.lastSeen.toDate().getTime() : 0;
           const bLastSeen = b.lastSeen && typeof b.lastSeen.toDate === 'function' ? b.lastSeen.toDate().getTime() : 0;
 
@@ -146,9 +144,9 @@ const UserLists = () => {
           if (a.status !== 'online' && b.status === 'online') return 1;
 
           if (aLastSeen && bLastSeen) {
-            return bLastSeen - aLastSeen; // Most recent first
+            return bLastSeen - aLastSeen;
           }
-          return a.userName.localeCompare(b.userName); // Alphabetical fallback
+          return a.userName.localeCompare(b.userName);
         });
       setUsers(filteredAndSortedUsers);
       setLoading(false);
@@ -167,39 +165,33 @@ const UserLists = () => {
     }
 
     const messagesRef = collection(db, "messages");
-    const chatUsers = [state.user.uid, selectedUser.uid].sort(); // Sort to create a consistent chat ID
+    const chatUsers = [state.user.uid, selectedUser.uid].sort();
     const chatQuery = query(
       messagesRef,
-      orderBy("timestamp", "asc"),
-      where("chatId", "==", chatUsers.join('_')) // Use a combined chat ID for more efficient query
+      // The index is required for this specific query combination:
+      // where clause on 'chatId' AND orderBy on 'timestamp'.
+      // Firebase will guide you to create it via the console link.
+      where("chatId", "==", chatUsers.join('_')),
+      orderBy("timestamp", "asc")
     );
 
-    // Optional: If you don't want to use a `chatId` field, use the more complex query but it's less efficient
-    // const q = query(
-    //   messagesRef,
-    //   orderBy("timestamp", "asc"),
-    //   where("senderId", "in", [state.user.uid, selectedUser.uid]),
-    //   where("receiverId", "in", [state.user.uid, selectedUser.uid])
-    // );
-
-
     const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
-        // If using the simpler `chatId` field, no further filter is needed here
         const currentChatMessages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setMessages(currentChatMessages);
         scrollToBottom();
     }, (error) => {
       console.error("Error fetching messages:", error);
+      // Display a user-friendly error if messages can't be fetched
+      // toast.error("Could not load messages. Please try again.");
     });
 
     return () => unsubscribe();
-  }, [state.user, selectedUser, db]); // useCallback is not needed here
+  }, [state.user, selectedUser, db]);
 
   // Auto-scroll to bottom when messages load/update
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
 
   // --- Message Sending Logic ---
   const sendMessage = async () => {
@@ -208,26 +200,26 @@ const UserLists = () => {
       return;
     }
 
-    const chatUsers = [state.user.uid, selectedUser.uid].sort(); // Consistent ID for the chat
+    const chatUsers = [state.user.uid, selectedUser.uid].sort();
     const messageData = {
       senderId: state.user.uid,
       receiverId: selectedUser.uid,
-      chatId: chatUsers.join('_'), // Add a chat ID to the message for easier querying
+      chatId: chatUsers.join('_'),
       text: messageText.trim(),
       timestamp: serverTimestamp(),
-      read: false, // Optional: for read receipts
+      read: false,
     };
 
     try {
       await addDoc(collection(db, "messages"), messageData);
       setMessageText("");
       if (messageInputRef.current) {
-        messageInputRef.current.focus(); // Keep input focused
+        messageInputRef.current.focus();
       }
-      // scrollToBottom() is already called by the onSnapshot listener, so no need to call it here again immediately
       console.log("Message sent successfully");
     } catch (error) {
       console.error("Error sending message:", error);
+      // toast.error("Failed to send message. Please try again.");
     }
   };
 
@@ -243,20 +235,20 @@ const UserLists = () => {
   if (loading) {
     return (
       <div className="h-screen bg-gray-900 text-white flex items-center justify-center">
-        <ClipLoader size={60} color="#6366F1" /> {/* Larger, more vibrant loader */}
+        <ClipLoader size={60} color="#6366F1" />
         <p className="ml-4 text-xl font-semibold">Loading chat...</p>
       </div>
     );
   }
 
+  // If not logged in, redirect to login page (this also handles the case where user object is null)
   if (!state.user || !state.user.uid) {
     return (
       <div className="h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 text-center">
         <FaUserCircle className="text-6xl text-gray-500 mb-4 animate-bounce-slow" />
         <h1 className="text-3xl font-bold mb-3">Authentication Required</h1>
         <p className="text-lg text-gray-400 mb-6">Please log in to access the chat application.</p>
-        
-        <Link to="/login" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+        <Link to="/login" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
           Go to Login
         </Link>
       </div>
@@ -265,8 +257,8 @@ const UserLists = () => {
 
   return (
     <>
-      <Header /> {/* Your global header */}
-      <div className="flex h-screen overflow-hidden bg-gray-900 text-white font-sans pt-16"> {/* Adjust pt- to account for Header height */}
+      <Header />
+      <div className="flex h-screen overflow-hidden bg-gray-900 text-white font-sans pt-16">
 
         {/* Mobile Sidebar Toggle Button */}
         <button
@@ -287,7 +279,7 @@ const UserLists = () => {
                   key={user.uid}
                   onClick={() => {
                     setSelectedUser(user);
-                    setSidebarOpen(false); // Close sidebar on user selection in mobile
+                    setSidebarOpen(false);
                   }}
                   className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all duration-300 mb-3 group ${
                     selectedUser?.uid === user.uid ? "bg-indigo-700 shadow-lg" : "hover:bg-gray-800"
@@ -295,11 +287,10 @@ const UserLists = () => {
                 >
                   <div className="relative">
                     <img
-                      src={user.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.uid}`} // Dynamic avatar placeholder
+                      src={user.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.uid}`}
                       alt={user.userName}
                       className="h-12 w-12 rounded-full object-cover border-2 border-gray-700 group-hover:border-indigo-500 transition-colors duration-300"
                     />
-                    {/* Online/Offline Dot Indicator */}
                     <span className={`absolute bottom-0 right-0 block h-3 w-3 rounded-full ring-2 ring-gray-950 ${user.status === 'online' ? 'bg-green-500 animate-pulse-dot' : 'bg-gray-500'}`}></span>
                   </div>
                   <div>
@@ -331,7 +322,6 @@ const UserLists = () => {
                     {getUserStatusDisplay(selectedUser)}
                   </div>
                 </div>
-                {/* Potentially add call/video call icons here */}
               </div>
 
               {/* Message Display Area */}
@@ -340,7 +330,8 @@ const UserLists = () => {
                   messages.map((msg, index) => {
                     const isSender = msg.senderId === state.user.uid;
                     const prevMsg = messages[index - 1];
-                    const showAvatar = !prevMsg || prevMsg.senderId !== msg.senderId || (msg.timestamp && prevMsg.timestamp && Math.abs(msg.timestamp.toDate().getTime() - prevMsg.timestamp.toDate().getTime()) > 60000); // Show avatar if sender changes or message is old
+                    // Logic to show avatar only if sender changes or new message is more than 60 seconds after previous from same sender
+                    const showAvatar = !prevMsg || prevMsg.senderId !== msg.senderId || (msg.timestamp && prevMsg.timestamp && Math.abs(msg.timestamp.toDate().getTime() - prevMsg.timestamp.toDate().getTime()) > 60000);
                     return (
                       <div
                         key={msg.id}
@@ -379,7 +370,7 @@ const UserLists = () => {
                     <FaPaperPlane className="text-4xl text-gray-600" />
                   </div>
                 )}
-                <div ref={messagesEndRef} className="pt-2"></div> {/* Invisible div for scrolling */}
+                <div ref={messagesEndRef} className="pt-2"></div>
               </div>
 
               {/* Message Input Area */}
@@ -392,7 +383,7 @@ const UserLists = () => {
                   onKeyPress={handleKeyPress}
                   placeholder="Type your message here..."
                   rows={1}
-                  style={{ maxHeight: '120px' }} // Limit textarea height
+                  style={{ maxHeight: '120px' }}
                 />
                 <button
                   onClick={sendMessage}
@@ -414,85 +405,28 @@ const UserLists = () => {
         </div>
       </div>
 
-      {/* Tailwind CSS Custom Animations (add to tailwind.config.js) */}
       <style>{`
-        @keyframes pulse-fast {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes pulse-dot {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-        }
-        @keyframes fade-in-up-message {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes bounce-slow {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        @keyframes pulse-dot { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @keyframes fade-in-up-message { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        .animate-pulse-fast {
-          animation: pulse-fast 1.5s infinite;
-        }
-        .animate-pulse-dot {
-          animation: pulse-dot 1.5s infinite;
-        }
-        .animate-fade-in-up-message {
-          animation: fade-in-up-message 0.3s ease-out;
-        }
-        .animate-fade-in {
-            animation: fade-in 0.3s ease-out;
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 3s infinite ease-in-out;
-        }
+        .animate-pulse-fast { animation: pulse-fast 1.5s infinite; }
+        .animate-pulse-dot { animation: pulse-dot 1.5s infinite; }
+        .animate-fade-in-up-message { animation: fade-in-up-message 0.3s ease-out; }
+        .animate-fade-in { animation: fade-in 0.3s ease-out; }
+        .animate-bounce-slow { animation: bounce-slow 3s infinite ease-in-out; }
 
-        /* Custom Scrollbar for messages and textarea */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #333;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #666;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #888;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #333; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #666; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #888; }
 
-        .custom-scrollbar-thin::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar-thin::-webkit-scrollbar-track {
-          background: #1a202c; /* bg-gray-950 */
-          border-radius: 10px;
-        }
-        .custom-scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #4a5568; /* darker gray */
-          border-radius: 10px;
-        }
-        .custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #666;
-        }
+        .custom-scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar-thin::-webkit-scrollbar-track { background: #1a202c; }
+        .custom-scrollbar-thin::-webkit-scrollbar-thumb { background: #4a5568; }
+        .custom-scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #666; }
       `}</style>
     </>
   );
