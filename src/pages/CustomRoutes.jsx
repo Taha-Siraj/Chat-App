@@ -41,7 +41,6 @@ const CustomRoutes = () => {
 
   return (
     <Routes>
-
       <Route path="/" element={<Home />} />
       <Route path="/login" element={state.user ? <Navigate to="/userlist" replace /> : <Login />} />
       <Route path="/signup" element={state.user ? <Navigate to="/userlist" replace /> : <Signup />} />
