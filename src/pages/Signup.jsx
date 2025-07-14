@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { BiSolidHide, BiSolidShow } from "react-icons/bi";
 import { Link, useNavigate } from 'react-router-dom';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
@@ -13,7 +13,7 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(false);
-    const { dispatch } = useContext(GlobalContext); // Only need dispatch here
+    const { dispatch } = useContext(GlobalContext);
 
     const navigate = useNavigate();
     const db = getFirestore(); // Initialize Firestore
@@ -81,6 +81,8 @@ const Signup = () => {
                 errorMessage = "Invalid email address format.";
             } else if (error.code === 'auth/weak-password') {
                 errorMessage = "Password is too weak. Please choose a stronger password (min 6 characters).";
+            } else if (error.code === 'auth/network-request-failed') { // Added network error
+                errorMessage = "Network error. Please check your internet connection.";
             }
             toast.error(errorMessage, { duration: 4000 });
         } finally {
@@ -105,6 +107,7 @@ const Signup = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
+                        {/* FIX: htmlFor instead of for */}
                         <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Your Name</label>
                         <input
                             type="text"
@@ -112,12 +115,14 @@ const Signup = () => {
                             name="name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            // FIX: Consistent input styling like Login
                             className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors duration-200"
                             placeholder="e.g., John Doe"
                             required
                         />
                     </div>
                     <div>
+                        {/* FIX: htmlFor instead of for */}
                         <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Your Email</label>
                         <input
                             type="email"
@@ -125,12 +130,14 @@ const Signup = () => {
                             name="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            // FIX: Consistent input styling like Login
                             className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors duration-200"
                             placeholder="e.g., yourname@example.com"
                             required
                         />
                     </div>
                     <div className="relative">
+                        {/* FIX: htmlFor instead of for */}
                         <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">Password</label>
                         <input
                             type={passwordShown ? "text" : "password"}
@@ -138,11 +145,13 @@ const Signup = () => {
                             name="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            // FIX: Consistent input styling like Login, and pr-12 for eye icon
                             className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors duration-200 pr-12"
                             placeholder="•••••••• (min 6 characters)"
                             required
                         />
                         <span
+                            // FIX: Icon position adjusted
                             className="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer text-gray-400 hover:text-white transition-colors top-8"
                             onClick={() => setPasswordShown(prev => !prev)}
                             aria-label={passwordShown ? "Hide password" : "Show password"}
@@ -153,6 +162,7 @@ const Signup = () => {
 
                     <button
                         type="submit"
+                        // FIX: Consistent button styling like Login, but with green accent
                         className="w-full py-3 px-5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
                         disabled={loading}
                     >
@@ -163,6 +173,7 @@ const Signup = () => {
 
                 <p className="text-sm text-gray-400 text-center mt-6">
                     Already have an account?{' '}
+                    {/* FIX: Link styling matches Login, but with green accent */}
                     <Link to="/login" className="font-medium text-green-400 hover:underline hover:text-green-300 transition-colors duration-200">
                         Login here
                     </Link>
