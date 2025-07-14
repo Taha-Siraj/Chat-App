@@ -395,7 +395,6 @@ const EditProfile = () => {
                 </form>
             </section>
 
-            {/* Custom Animations CSS */}
             <style>{`
                 @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes fade-in-up-card { from { opacity: 0; transform: translateY(50px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
