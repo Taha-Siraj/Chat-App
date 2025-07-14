@@ -18,7 +18,6 @@ const app = initializeApp(firebaseConfig);
 
   return (
     <>
-   
     <CustomRoutes/>
     </>
   );

@@ -18,7 +18,7 @@ const Signup = () => {
     const { state, dispatch } = useContext(GlobalContext);
 
     useEffect(() => {
-        console.log("state", state);
+    console.log("state", state);
     } , [state]);
     
     const navigate = useNavigate();
@@ -114,7 +114,7 @@ const Signup = () => {
         theme="dark"
         transition={Bounce}
 />
-      <section className="bg-gray-50 dark:bg-gray-900">
+<section className="bg-gray-50 dark:bg-gray-900">
   <div className="flex bg-gray-950 text-white h-screen flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">      
   <h1 className='text-2xl capitalize py-4 font-semibold font-mono'>welcome To Chat App</h1>
       <div className="w-full bg-[#fff] rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800  dark:border-gray-700 font-mono">
