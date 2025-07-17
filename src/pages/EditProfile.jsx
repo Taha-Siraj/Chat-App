@@ -307,11 +307,11 @@ const EditProfile = () => {
                         <label htmlFor="photo-upload" className="cursor-pointer bg-indigo-600 text-white py-2 px-4 rounded-full text-sm font-semibold hover:bg-indigo-700 transition-colors duration-200 flex items-center gap-2">
                             <FaUpload /> Change Photo
                             <input
-                                id="photo-upload"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="hidden"
+                            id="photo-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
                             />
                         </label>
                     </div>
